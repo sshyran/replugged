@@ -1,6 +1,7 @@
 const Module = require('module');
 const { join, dirname } = require('path');
 const { existsSync, unlinkSync } = require('fs');
+const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
 
 // Restore the classic path; The updater relies on it and it makes Discord go corrupt
 const electronPath = require.resolve('electron');
@@ -11,6 +12,16 @@ const electron = require('electron');
 const PatchedBrowserWindow = require('./browserWindow');
 
 require('./ipc/main');
+
+let rdSDK = {};
+try {
+  rdSDK = require(join(__dirname, '../settings/pc-sdk.json'));
+} catch (err) {}
+
+let rdGeneral = {};
+try {
+  rdGeneral = require(join(__dirname, '../settings/pc-general.json'));
+} catch (err) {}
 
 console.log('Hello from Replugged!');
 
@@ -105,6 +116,14 @@ if (process.platform === 'win32') {
     if (existsSync(devToolsExtensions)) {
       unlinkSync(devToolsExtensions);
     }
+  });
+}
+
+if (rdGeneral?.labs['pc-sdk'] && rdSDK?.reactDevTools) {
+  electron.app.whenReady().then(() => {
+    installExtension(REACT_DEVELOPER_TOOLS)
+      .then((name) => console.log(`Added Extension:  ${name}`))
+      .catch((err) => console.log('An error occurred: ', err));
   });
 }
 

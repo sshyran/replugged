@@ -1,11 +1,11 @@
-const { Flux, React, getModule, getModuleByDisplayName, i18n: { Messages } } = require('powercord/webpack');
-const { AsyncComponent, Tooltip, HeaderBar, Clickable, Icons } = require('powercord/components');
+const { Flux, React, getModule, i18n: { Messages } } = require('powercord/webpack');
+const { Tooltip, HeaderBar, Clickable, Icons } = require('powercord/components');
 const ForceUI = require('./ForceUI');
 const SplashScreen = require('./SplashScreen');
 const Settings = require('./Settings');
 const TitleBar = require('./TitleBar');
 
-const VerticalScroller = AsyncComponent.from(getModuleByDisplayName('VerticalScroller'));
+const { AdvancedScrollerAuto } = getModule([ 'AdvancedScrollerAuto' ], false);
 
 class SdkWindow extends React.PureComponent {
   constructor (props) {
@@ -16,16 +16,16 @@ class SdkWindow extends React.PureComponent {
   render () {
     return (
       <>
-        <TitleBar type='WINDOWS' windowKey={'DISCORD_POWERCORD_SANDBOX'} themeOverride={this.props.theme}/>
+        <TitleBar type='WINDOWS' windowKey={'DISCORD_REPLUGGED_SANDBOX'} themeOverride={this.props.theme}/>
         {this.renderHeaderBar()}
         <div className='powercord-text powercord-sdk'>
-          <VerticalScroller _pass={{ ref: this.scrollerRef }}>
-            <div className='powercord-sdk-container'>
+          <AdvancedScrollerAuto className='powercord-sdk-container powercord-sdk-scroller' ref={this.scrollerRef}>
+            <div>
               <ForceUI/>
               <SplashScreen/>
               <Settings/>
             </div>
-          </VerticalScroller>
+          </AdvancedScrollerAuto>
         </div>
       </>
     );
@@ -56,10 +56,13 @@ class SdkWindow extends React.PureComponent {
             if (!id) {
               // Consider this is the always on top thing
               const popoutModule = await getModule([ 'setAlwaysOnTop', 'open' ]);
-              return popoutModule.setAlwaysOnTop('DISCORD_POWERCORD_SANDBOX', !this.props.windowOnTop);
+              return popoutModule.setAlwaysOnTop('DISCORD_REPLUGGED_SANDBOX', !this.props.windowOnTop);
             }
             const el = this.props.guestWindow.document.getElementById(id);
-            this.scrollerRef.current.scrollIntoView(el);
+            this.scrollerRef.current.scrollTo({
+              to: el.offsetTop - 10,
+              animate: true
+            });
           }}
         >
           <Icon className={headerBarClasses.icon}/>
@@ -72,8 +75,8 @@ class SdkWindow extends React.PureComponent {
 module.exports = Flux.connectStoresAsync(
   [ getModule([ 'theme', 'locale' ]), getModule([ 'getWindow' ]) ],
   ([ { theme }, windowStore ]) => ({
-    guestWindow: windowStore.getWindow('DISCORD_POWERCORD_SANDBOX'),
-    windowOnTop: windowStore.getIsAlwaysOnTop('DISCORD_POWERCORD_SANDBOX'),
+    guestWindow: windowStore.getWindow('DISCORD_REPLUGGED_SANDBOX'),
+    windowOnTop: windowStore.getIsAlwaysOnTop('DISCORD_REPLUGGED_SANDBOX'),
     theme
   })
 )(SdkWindow);

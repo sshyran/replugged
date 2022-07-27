@@ -4,7 +4,7 @@
 
 .powercord-sdk {
   width: 100%;
-  margin-top: 22px;
+  margin-top: 45px;
   height: calc(100% - 22px);
   background-color: var(--background-primary);
 
@@ -19,14 +19,13 @@
   }
 
   &-header {
-    top: 22px;
+    top: 57px;
     box-shadow: var(--elevation-low);
 
     .children-19S4PO {
       div:first-child {
         margin-left: 8px;
       }
-
       div:last-child {
         margin-left: auto;
       }
@@ -35,13 +34,14 @@
 
   &-container {
     padding: 20px;
+    overflow: hidden scroll;
+    height: 100%;
   }
 
   .category {
     &:not(:first-child) {
       margin-top: 46px;
     }
-
     h2 {
       font-size: 22px;
       font-weight: bold;
@@ -49,23 +49,18 @@
       padding-bottom: 16px;
       border-bottom: thin solid var(--background-modifier-accent);
     }
-
     p {
       margin-bottom: 24px;
     }
-
     .description-3_Ncsb {
       white-space: pre-line;
-
       strong strong {
         color: #f04747;
       }
     }
   }
-
   .splash-buttons button {
     margin-bottom: 8px;
-
     &:not(:last-child) {
       margin-right: 8px;
     }
