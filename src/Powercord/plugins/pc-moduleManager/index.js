@@ -5,7 +5,7 @@ const { PopoutWindow } = require('powercord/components');
 const { inject, uninject } = require('powercord/injector');
 const { findInReactTree, forceUpdateElement } = require('powercord/util');
 const { Plugin } = require('powercord/entities');
-const { SpecialChannels: { CSS_SNIPPETS, STORE_PLUGINS, STORE_THEMES } } = require('powercord/constants');
+const { SpecialChannels: { CSS_SNIPPETS, STORE_PLUGINS, STORE_THEMES }, WEBSITE } = require('powercord/constants');
 const { join } = require('path');
 const commands = require('./commands');
 const deeplinks = require('./deeplinks');
@@ -22,6 +22,12 @@ const { injectContextMenu } = require('powercord/util');
 // @todo: give a look to why quickcss.css file shits itself
 module.exports = class ModuleManager extends Plugin {
   async startPlugin () {
+    // this is for the new api
+    const currentAPI = powercord.settings.get('backendURL', WEBSITE);
+    if (currentAPI === 'https://powercord.dev') {
+      powercord.settings.set('backendURL', WEBSITE); // change it to replugged.dev
+    }
+
     powercord.api.i18n.loadAllStrings(i18n);
     Object.values(commands).forEach(cmd => powercord.api.commands.registerCommand(cmd));
     this.Menu = getModule([ 'MenuItem' ], false);
@@ -46,7 +52,7 @@ module.exports = class ModuleManager extends Plugin {
       id: 'pc-moduleManager-deeplinks',
       name: 'Deeplinks',
       date: 1590242558077,
-      description: 'Makes some powercord.dev links trigger in-app navigation, as well as some potential embedding if applicable',
+      description: 'Makes some replugged.dev links trigger in-app navigation, as well as some potential embedding if applicable',
       /* lexisother: Hi developer! Did you fix this experiment? Please remove the `broken` object! Thanks <3 */
       broken: {
         reason: 'the deeplinks module is empty'
@@ -74,6 +80,14 @@ module.exports = class ModuleManager extends Plugin {
       category: this.entityID,
       label: () => Messages.REPLUGGED_THEMES,
       render: (props) => React.createElement(Themes, {
+        openPopout: () => this._openQuickCSSPopout(),
+        ...props
+      })
+    });
+    powercord.api.settings.registerSettings('pc-moduleManager-css', {
+      category: this.entityID,
+      label: () => Messages.REPLUGGED_QUICKCSS,
+      render: (props) => React.createElement(QuickCSS, {
         openPopout: () => this._openQuickCSSPopout(),
         ...props
       })
@@ -210,7 +224,7 @@ module.exports = class ModuleManager extends Plugin {
       css += `${snippet}\n`;
       css += `/** ${message.id} */\n`;
     }
-    this._saveQuickCSS(this._quickCSS + css);
+    this._applyQuickCSS(this._quickCSS + css, true);
   }
 
   async _fetchEntities (type) {
@@ -255,14 +269,22 @@ module.exports = class ModuleManager extends Plugin {
     document.head.appendChild(this._quickCSSElement);
     if (existsSync(this._quickCSSFile)) {
       this._quickCSS = await readFile(this._quickCSSFile, 'utf8');
-      this._quickCSSElement.innerHTML = this._quickCSS;
+      if (this.settings.get('qcss-enabled', true)) {
+        this._quickCSSElement.innerHTML = this._quickCSS;
+      }
     }
   }
 
-  async _saveQuickCSS (css) {
+  async _applyQuickCSS (css, save = false) {
     this._quickCSS = css.trim();
     this._quickCSSElement.innerHTML = this._quickCSS;
-    await writeFile(this._quickCSSFile, this._quickCSS);
+    if (save) {
+      await writeFile(this._quickCSSFile, this._quickCSS);
+    }
+  }
+
+  async _clearQuickCSSElement () {
+    this._quickCSSElement.innerHTML = '';
   }
 
   async _openQuickCSSPopout () {

@@ -21,7 +21,6 @@ module.exports = class UpdaterSettings extends React.PureComponent {
   }
 
   render () {
-    const isUnsupported = window.GLOBAL_ENV.RELEASE_CHANNEL !== 'canary';
     const moment = getModule([ 'momentProperties' ], false);
     // @todo: Make this be in its own store
     const awaitingReload = this.props.getSetting('awaiting_reload', false);
@@ -64,7 +63,7 @@ module.exports = class UpdaterSettings extends React.PureComponent {
     return <div className='powercord-updater powercord-text'>
       {awaitingReload
         ? this.renderReload()
-        : isUnsupported && this.renderUnsupported()}
+        : ''}
       <div className='top-section'>
         <div className='icon'>{icon}</div>
         <div className='status'>
@@ -177,6 +176,13 @@ module.exports = class UpdaterSettings extends React.PureComponent {
         >
           {Messages.REPLUGGED_UPDATES_OPTS_AUTO}
         </SwitchItem>
+        <SwitchItem
+          value={this.props.getSetting('toastenabled', true)}
+          onChange={() => this.props.toggleSetting('toastenabled', true)}
+          note={Messages.REPLUGGED_UPDATES_OPTS_TOAST_ENABLED_DESC}
+        >
+          {Messages.REPLUGGED_UPDATES_OPTS_TOAST_ENABLED}
+        </SwitchItem>
         <TextInput
           note={Messages.REPLUGGED_UPDATES_OPTS_INTERVAL_DESC}
           onChange={val => this.props.updateSetting('interval', (Number(val) && Number(val) >= 10) ? Math.ceil(Number(val)) : 10, 15)}
@@ -238,13 +244,6 @@ module.exports = class UpdaterSettings extends React.PureComponent {
       </Button>
     </>;
     return this._renderFormNotice(Messages.REPLUGGED_UPDATES_AWAITING_RELOAD_TITLE, body);
-  }
-
-  renderUnsupported () {
-    const body = <p>
-      {Messages.REPLUGGED_UPDATES_UNSUPPORTED_DESC.format({ releaseChannel: window.GLOBAL_ENV.RELEASE_CHANNEL })}
-    </p>;
-    return this._renderFormNotice(Messages.REPLUGGED_UPDATES_UNSUPPORTED_TITLE, body);
   }
 
   _renderFormNotice (title, body) {
