@@ -1,6 +1,55 @@
 const { API } = require('powercord/entities');
+const { getModule, channels: { getChannelId }, messages: { sendMessage, receiveMessage } } = require('powercord/webpack');
 
-const { join } = require('path');
+const { createBotMessage } = getModule([ 'createBotMessage' ], false);
+
+
+async function handleCommand (options, args) {
+  const { executor } = options;
+
+  try {
+    const channel = getChannelId();
+    if (!channel) {
+      return;
+    }
+
+    const res = await executor(args);
+
+    if (!res || !res.result) {
+      return;
+    }
+
+    if (!res.send) {
+      const options = { embeds: [] };
+
+      if (typeof res.result === 'string') {
+        options.content = res.result;
+      } else {
+        options.embeds.push(res.result);
+      }
+
+      const msg = createBotMessage({
+        channelId: channel,
+        content: options?.content
+      });
+      receiveMessage(channel, msg);
+    } else {
+      sendMessage(channel, {
+        content: res.result,
+        invalidEmojis: [],
+        validNonShortcutEmojis: [],
+        tts: false
+      });
+    }
+  } catch (error) {
+    const msg = createBotMessage({
+      channelId: void 0,
+      content: ':x: An error occurred while running this command. Check your console.'
+    });
+    receiveMessage(void 0, msg);
+  }
+}
+
 
 /**
  * @typedef PowercordChatCommand
@@ -21,7 +70,7 @@ class CommandsAPI extends API {
   constructor () {
     super();
 
-    this.commands = {};
+    this.commands = new Map();
   }
 
   get prefix () {
@@ -29,46 +78,71 @@ class CommandsAPI extends API {
   }
 
   get find () {
-    const arr = Object.values(this.commands);
+    const arr = Array.from(this.commands.values());
     return arr.find.bind(arr);
   }
 
   get filter () {
-    const arr = Object.values(this.commands);
+    const arr = Array.from(this.commands.values());
     return arr.filter.bind(arr);
   }
 
   get map () {
-    const arr = Object.values(this.commands);
+    const arr = Array.from(this.commands.values());
     return arr.map.bind(arr);
   }
 
   get sort () {
-    const arr = Object.values(this.commands);
+    const arr = Array.from(this.commands.values());
     return arr.sort.bind(arr);
+  }
+
+  values () {
+    return this.commands.values();
+  }
+
+  get size () {
+    return this.commands.size;
   }
 
   /**
    * Registers a command
    * @param {PowercordChatCommand} command Command to register
    */
-  registerCommand (command) {
-    // @todo: remove this once there's a proper implemention (if any) for fetching the command origin.
-    const stackTrace = (new Error()).stack;
-    const [ , origin ] = stackTrace.match(new RegExp(`${global._.escapeRegExp(powercord.pluginManager.pluginDir)}.([-\\w]+)`)) || stackTrace.match(new RegExp(`${global._.escapeRegExp(join(__dirname, '../coremods'))}.([-\\w]+)`));
+  registerCommand (options) {
+    const { command, ...cmd } = options;
 
-    if (typeof command === 'string') {
-      console.error('no');
-      return;
-    }
-    if (this.commands[command.command]) {
-      throw new Error(`Command ${command.command} is already registered!`);
-    }
-
-    this.commands[command.command] = {
-      ...command,
-      origin
-    };
+    this.commands.set(command, {
+      type: 0,
+      inputType: 0,
+      target: 1,
+      id: command,
+      name: command,
+      displayName: command,
+      displayDescription: options.description,
+      applicationId: 'replugged',
+      dmPermission: true,
+      listed: true,
+      __replugged: true,
+      options: [
+        {
+          type: 3,
+          required: false,
+          description: `Usage: ${cmd.usage?.replace?.(/{c}/g, command) ?? command}`,
+          name: 'args',
+          displayName: 'args',
+          displayDescription: `Usage: ${cmd.usage?.replace?.(/{c}/g, command) ?? command}`
+        }
+      ],
+      ...cmd,
+      execute: async (result) => {
+        try {
+          handleCommand(options, Object.values(result).map((e) => e.value) ?? []);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    });
   }
 
   /**
@@ -76,9 +150,7 @@ class CommandsAPI extends API {
    * @param {String} command Command name to unregister
    */
   unregisterCommand (command) {
-    if (this.commands[command]) {
-      delete this.commands[command];
-    }
+    this.commands.delete(command);
   }
 }
 
